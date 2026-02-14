@@ -1,22 +1,16 @@
 FROM node:18
 
-# Setup a non-root user (Hugging Face Security Requirement)
-RUN useradd -m -u 1000 user
-USER user
-ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+WORKDIR /app
 
-WORKDIR $HOME/app
-
-# Copy package files first for faster building
-COPY --chown=user package*.json ./
+# Copy package files and install
+COPY package*.json ./
 RUN npm install
 
-# Copy your app.js and other files
-COPY --chown=user . .
+# Copy everything else
+COPY . .
 
-# IMPORTANT: Hugging Face uses port 7860
+# Hugging Face uses port 7860
 ENV PORT=7860
 EXPOSE 7860
 
-CMD [ "node", "app.js" ]
+CMD ["node", "server.js"]
