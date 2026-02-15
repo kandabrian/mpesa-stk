@@ -1,8 +1,8 @@
-Set-Content -Path README.md -Value "---
-title: Vumbua Mpesa STK
+---
+title: Mpesa Stk
 emoji: 💸
 colorFrom: green
 colorTo: blue
 sdk: docker
 app_port: 7860
----"
+---
