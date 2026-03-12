@@ -119,7 +119,7 @@ app.post("/pay", payLimiter, async (req, res) => {
             TransactionType: "CustomerBuyGoodsOnline",
             Amount: amountNum,
             PartyA: phoneStr,
-            PartyB: process.env.TILL_NUMBER, // Explicitly set to the Till Number
+            PartyB: process.env.TILL_NUMBER,
             PhoneNumber: phoneStr,
             CallBackURL: process.env.CALLBACK_URL,
             AccountReference: description.substring(0, 12),
@@ -157,37 +157,29 @@ app.post("/callback", async (req, res) => {
 
     console.log(`📩 Callback received | Checkout: ${checkoutId} | Code: ${resultCode}`);
 
-    // 2. Parse the data nicely
-    let cleanPaymentData = {
-        CheckoutRequestID: checkoutId,
-        ResultCode: resultCode,
-        ResultDesc: resultDesc,
-        isSuccess: resultCode === 0,
-        metadata: {}
-    };
-
     if (resultCode === 0) {
-        // Successful payment - parse the messy Safaricom array into a clean object
         const rawItems = payload?.Body?.stkCallback?.CallbackMetadata?.Item || [];
-        cleanPaymentData.metadata = rawItems.reduce((acc, item) => {
+        const metadata = rawItems.reduce((acc, item) => {
             acc[item.Name] = item.Value;
             return acc;
         }, {});
-        
-        console.log(`✅ Paid! Receipt: ${cleanPaymentData.metadata.MpesaReceiptNumber}, Amount: ${cleanPaymentData.metadata.Amount}`);
+        console.log(`✅ Paid! Receipt: ${metadata.MpesaReceiptNumber}, Amount: ${metadata.Amount}`);
     } else {
         console.log(`❌ Payment failed/cancelled: ${resultDesc}`);
     }
 
-    // 3. Forward to your main app server
+    // 2. Forward RAW payload to main app with secret header
     if (process.env.APP_SERVER_URL) {
         const target = `${process.env.APP_SERVER_URL}/mpesa/callback`;
         try {
-            await axios.post(target, cleanPaymentData, {
-                headers: { "Content-Type": "application/json" },
+            await axios.post(target, payload, {  // ← raw payload, not cleaned
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-mpesa-secret": process.env.MPESA_CALLBACK_SECRET || ""  // ← secret header
+                },
                 timeout: 10000
             });
-            console.log("➡️ Forwarded clean data to main app.");
+            console.log("➡️ Forwarded to main app successfully.");
         } catch (fwdErr) {
             console.error("❌ Forwarding FAILED:", fwdErr.message);
         }
