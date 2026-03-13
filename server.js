@@ -171,18 +171,24 @@ app.post("/callback", async (req, res) => {
     // 2. Forward RAW payload to main app with secret header
     if (process.env.APP_SERVER_URL) {
         const target = `${process.env.APP_SERVER_URL}/api/mpesa/callback`;
+        console.log(`➡️ Forwarding to: ${target}`);
         try {
-            await axios.post(target, payload, {
+            const fwdRes = await axios.post(target, payload, {
                 headers: {
                     "Content-Type": "application/json",
                     "x-mpesa-secret": process.env.MPESA_CALLBACK_SECRET || ""
                 },
                 timeout: 10000
             });
-            console.log("➡️ Forwarded to main app successfully.");
+            console.log(`➡️ Forwarded successfully. Status: ${fwdRes.status}`);
         } catch (fwdErr) {
             console.error("❌ Forwarding FAILED:", fwdErr.message);
+            console.error("❌ Forward target:", target);
+            console.error("❌ Response status:", fwdErr.response?.status);
+            console.error("❌ Response body:", JSON.stringify(fwdErr.response?.data));
         }
+    } else {
+        console.warn("⚠️ APP_SERVER_URL not set — forwarding disabled");
     }
 });
 
