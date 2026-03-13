@@ -170,12 +170,12 @@ app.post("/callback", async (req, res) => {
 
     // 2. Forward RAW payload to main app with secret header
     if (process.env.APP_SERVER_URL) {
-        const target = `${process.env.APP_SERVER_URL}/mpesa/callback`;
+        const target = `${process.env.APP_SERVER_URL}/api/mpesa/callback`;
         try {
-            await axios.post(target, payload, {  // ← raw payload, not cleaned
+            await axios.post(target, payload, {
                 headers: {
                     "Content-Type": "application/json",
-                    "x-mpesa-secret": process.env.MPESA_CALLBACK_SECRET || ""  // ← secret header
+                    "x-mpesa-secret": process.env.MPESA_CALLBACK_SECRET || ""
                 },
                 timeout: 10000
             });
